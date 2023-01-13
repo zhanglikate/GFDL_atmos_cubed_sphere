@@ -173,6 +173,7 @@ module fv_diagnostics_mod
  logical :: m_calendar
  integer  sphum, liq_wat, ice_wat, cld_amt    ! GFDL physics
  integer  rainwat, snowwat, graupel, hailwat
+ integer  dust2, seas1, bc1, oc1, so2
 #ifdef MULTI_GASES
  integer  spo, spo2, spo3
 #else
@@ -4471,9 +4472,11 @@ contains
  real(kind=R_GRID), intent(IN):: area(is-n_g:ie+n_g,js-n_g:je+n_g)
  type(domain2d), intent(INOUT) :: domain
 ! Local:
- real psq(is:ie,js:je,nwat), psqv(is:ie,js:je)
+ integer, parameter :: chmn=5
+ real psq(is:ie,js:je,nwat), psqv(is:ie,js:je),pschem(is:ie,js:je,chmn)
  real q_strat(is:ie,js:je)
  real qtot(nwat), qwat
+ real chemtot(chmn)
  real psmo, totw, psdry
  integer k, n, kstrat
 
@@ -4564,6 +4567,44 @@ contains
           write(*,*) 'GFS condensate (kg/m^2)', trim(gn), '=', qtot(liq_wat)*ginv
      endif
   endif
+
+if (chmn > 0) then
+! Calculate Global Mass of Chemical tracers
+    dust2   = get_tracer_index (MODEL_ATMOS, 'dust2')
+    seas1   = get_tracer_index (MODEL_ATMOS, 'seas1')
+    bc1     = get_tracer_index (MODEL_ATMOS, 'bc1')
+    oc1     = get_tracer_index (MODEL_ATMOS, 'oc1')
+    so2     = get_tracer_index (MODEL_ATMOS, 'so2')
+
+    pschem(:,:,:) = 0.
+    call z_sum(is, ie, js, je, km, n_g, delp, q(is-n_g,js-n_g,1,dust2  ), pschem(is,js,1  ))
+    call z_sum(is, ie, js, je, km, n_g, delp, q(is-n_g,js-n_g,1,seas1  ), pschem(is,js,2  ))
+    call z_sum(is, ie, js, je, km, n_g, delp, q(is-n_g,js-n_g,1,bc1  ), pschem(is,js,3  ))
+    call z_sum(is, ie, js, je, km, n_g, delp, q(is-n_g,js-n_g,1,oc1  ), pschem(is,js,4  ))
+    call z_sum(is, ie, js, je, km, n_g, delp, q(is-n_g,js-n_g,1,so2  ), pschem(is,js,5  ))
+
+
+!!-------------------
+!! Check global means
+!!-------------------
+
+ do n=1,chmn
+    !chemtot(n) = g_sum(domain, pschem(is,js,n), is, ie, js, je, n_g, area, 1) !global mean
+    chemtot(n) = g_sum(domain, pschem(is,js,n), is, ie, js, je, n_g, area, 0) ! global total
+ enddo
+
+
+ if( master ) then
+    write(*,*) '--- Chem_trac total (kg) ---'
+    write(*,*) 'Total dust2', trim(gn), '=', chemtot(1)*ginv
+    write(*,*) 'Total seas1', trim(gn), '=', chemtot(2)*ginv
+    write(*,*) 'Total bc1',   trim(gn), '=', chemtot(3)*ginv
+    write(*,*) 'Total oc1',   trim(gn), '=', chemtot(4)*ginv
+    write(*,*) 'Total SO2',   trim(gn), '=', chemtot(5)*ginv
+    write(*,*) '---------------------------------------------'
+ endif
+
+endif   !end ghg global sum loop
 
  end subroutine prt_mass
 
