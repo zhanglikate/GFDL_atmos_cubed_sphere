@@ -4478,7 +4478,7 @@ contains
  real qtot(nwat), qwat
  real chemtot(chmn)
  real psmo, totw, psdry
- integer k, n, kstrat
+ integer k, n, kstrat, ntracers
 
 !Needed when calling prt_mass in fv_restart?
     sphum   = get_tracer_index (MODEL_ATMOS, 'sphum')
@@ -4568,7 +4568,9 @@ contains
      endif
   endif
 
-if (chmn > 0) then
+call get_number_tracers(MODEL_ATMOS, ntracers)
+
+if (chmn > 0 .and. ntracers > 10) then
 ! Calculate Global Mass of Chemical tracers
     dust2   = get_tracer_index (MODEL_ATMOS, 'dust2')
     seas1   = get_tracer_index (MODEL_ATMOS, 'seas1')
@@ -4604,7 +4606,7 @@ if (chmn > 0) then
     write(*,*) '---------------------------------------------'
  endif
 
-endif   !end ghg global sum loop
+endif   !end chem global sum loop
 
  end subroutine prt_mass
 
