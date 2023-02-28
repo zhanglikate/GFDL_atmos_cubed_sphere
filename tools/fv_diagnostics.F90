@@ -4568,9 +4568,9 @@ contains
      endif
   endif
 
-call get_number_tracers(MODEL_ATMOS, ntracers)
+call get_number_tracers(MODEL_ATMOS, ntracers) ! for GOCART aerosol
 
-if (chmn > 0 .and. ntracers > 10) then
+if (chmn > 0 .and. ntracers > 20) then
 ! Calculate Global Mass of Chemical tracers
     dust2   = get_tracer_index (MODEL_ATMOS, 'dust2')
     seas1   = get_tracer_index (MODEL_ATMOS, 'seas1')
